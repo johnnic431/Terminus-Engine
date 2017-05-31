@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="lib" path="res/jars/joml-1.9.1-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="res/jars/log4j-api-2.6.2.jar"/>
+	<classpathentry kind="lib" path="res/jars/log4j-core-2.6.2.jar"/>
+	<classpathentry kind="lib" path="res/jars/log4j-iostreams-2.6.2.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-assimp.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-egl.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-glfw.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-jemalloc.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-openal.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-opengl.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-stb.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl-vulkan.jar"/>
+	<classpathentry kind="lib" path="res/jars/lwjgl.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

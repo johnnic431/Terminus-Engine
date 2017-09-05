@@ -5,12 +5,22 @@ import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.form2bgames.terminusengine.events.BasicEventHandler;
+import com.form2bgames.terminusengine.events.EngineShutdownEvent;
+import com.form2bgames.terminusengine.events.EventManager;
 import com.form2bgames.terminusengine.graphics.GL43Renderer;
 
-public abstract class TerminusGame {
-	public static final Logger logger=LogManager.getLogger();
+public abstract class TerminusGame{
+	protected static final Logger logger=LogManager.getLogger();
 	protected GL43Renderer renderer;
+	protected static TerminusGame INSTANCE;
+	
+	public static TerminusGame getInstance(){
+		return INSTANCE;
+	}
+	
 	public TerminusGame(AppInfo ai){
+		TerminusGame.INSTANCE=this;
 		String arch=System.getProperty("os.arch");
 		String os=System.getProperty("os.name");
 		String os_arch="";
@@ -29,15 +39,12 @@ public abstract class TerminusGame {
 		logger.info(os_arch);
 		File f=new File("res/natives/"+os_arch);
 		logger.info(f.getAbsolutePath());
-		System.setProperty("org.lwjgl.util.Debug", EngineInfo.bt!=EngineInfo.BuildType.STABLE?"true":"false");
-		System.setProperty("org.lwjgl.librarypath", f.getAbsolutePath());
+		System.setProperty("org.lwjgl.util.Debug",EngineInfo.bt!=EngineInfo.BuildType.STABLE?"true":"false");
+		System.setProperty("org.lwjgl.librarypath",f.getAbsolutePath());
 		
 		logger.info("Terminus Version: {}",EngineInfo.getVersion());
 		
 		renderer=new GL43Renderer(ai.appName);
-		renderer.setName("Graphics Thread");
-		renderer.setGame(this);
-
 		renderer.start();
 		
 		gameInit();
@@ -45,29 +52,25 @@ public abstract class TerminusGame {
 		logger.info("done with gameinit");
 		
 		Thread gameLoop=new Thread(new Runnable(){
-
 			@Override
-			public void run() {
+			public void run(){
 				loop();
 			}
 		});
 		gameLoop.setName("Game Loop Thread");
 		gameLoop.start();
 		
+		BasicEventHandler beh=new BasicEventHandler();
+		EventManager.subscribe(EngineShutdownEvent.ENGINE_SHUTDOWN_EVENT,beh);
+		
 		renderer.finishedLoading();
+		
+		beh.waitForEvent();// stop things from gameinit being erroneously GC'ed
+		// also eventually save preferences
+		System.exit(0);
 	}
+	
 	protected abstract void loop();
+	
 	protected abstract void gameInit();
-	private boolean doneRender=false;
-	protected void waitForRenderFinished(){
-		try{
-			while(!doneRender){
-				Thread.sleep(0,10000);
-			}
-		}catch(Exception e){}
-		doneRender=false;
-	}
-	public final void signalRenderDone() {
-		doneRender=true;
-	}
 }

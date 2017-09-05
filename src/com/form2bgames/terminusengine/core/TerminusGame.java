@@ -9,10 +9,11 @@ import com.form2bgames.terminusengine.events.BasicEventHandler;
 import com.form2bgames.terminusengine.events.EngineShutdownEvent;
 import com.form2bgames.terminusengine.events.EventManager;
 import com.form2bgames.terminusengine.graphics.GL43Renderer;
+import com.form2bgames.terminusengine.graphics.GLRenderer;
 
 public abstract class TerminusGame{
 	protected static final Logger logger=LogManager.getLogger();
-	protected GL43Renderer renderer;
+	protected GLRenderer renderer;
 	protected static TerminusGame INSTANCE;
 	
 	public static TerminusGame getInstance(){
@@ -44,8 +45,16 @@ public abstract class TerminusGame{
 		
 		logger.info("Terminus Version: {}",EngineInfo.getVersion());
 		
-		renderer=new GL43Renderer(ai.appName);
-		renderer.start();
+		Thread rTh=new Thread(new Runnable(){
+
+			@Override
+			public void run(){
+				renderer=GLRenderer.startRenderer("");
+				renderer.render();
+			}
+		});
+		rTh.setName("GT Daemon");
+		rTh.start();
 		
 		gameInit();
 		

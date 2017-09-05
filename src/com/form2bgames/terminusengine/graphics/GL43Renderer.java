@@ -60,13 +60,7 @@ public class GL43Renderer extends GLRenderer{
 					+"layout(location=128) uniform sampler2D texture;\n"+""+"out vec4 color;"+""+"void main(){\n"
 					+"	color=texture2D(texture,textureCoords);\n"+"}\n";
 	
-	public GL43Renderer(String appName){
-		super(appName);
-	}
-	
 	public void init(){
-		super.init();
-		
 		GL11.glEnable(GL43.GL_DEBUG_OUTPUT);
 		GL11.glEnable(GL43.GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		
@@ -88,13 +82,7 @@ public class GL43Renderer extends GLRenderer{
 	}
 	
 	@Override
-	public void run(){
-		init();
-		KeyboardManager.init(window);
-		render();
-	}
-	
-	private void render(){
+	public void render(){
 		
 		logger.info("Entering render");
 		

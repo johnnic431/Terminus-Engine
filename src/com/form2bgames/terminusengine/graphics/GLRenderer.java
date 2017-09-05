@@ -49,26 +49,25 @@ import org.lwjgl.opengl.GLCapabilities;
 
 import com.form2bgames.terminusengine.core.KeyboardManager;
 
-public abstract class GLRenderer extends Thread{
+public abstract class GLRenderer{
 	protected static final Logger logger=LogManager.getLogger();
 	protected static long window=0;
-	protected GLCapabilities glcaps=null;
-	protected String appName;
+	protected static GLCapabilities glcaps=null;
+	protected static String appName;
 	protected static final int MAX_GRAPHICS_JOBS_PER_FRAME=0x20;
-	protected boolean doneWithInit=false;
-	protected int width,height;
+	protected static boolean doneWithInit=false;
+	protected static int width,height;
 	protected static float aspectRatio;
-	protected KeyboardManager km=null;
+	protected static KeyboardManager km=null;
 	protected long fps=0,lastFrameTime=0;
-	protected boolean loaded=false;
+	protected static boolean loaded=false;
 	protected static SlotInfo[] si;
 	
-	public GLRenderer(String appName){
-		this.appName=appName;
-		this.setName("Graphics Thread");
+	public GLRenderer(){
 	}
 	
-	public void init(){
+	public static GLRenderer startRenderer(String appName){
+		GLRenderer.appName=appName;
 		if(!glfwInit())
 			throw new RuntimeException("Failed initializing GLFW");
 		
@@ -128,11 +127,16 @@ public abstract class GLRenderer extends Thread{
 		
 		if(glcaps.OpenGL43){
 			logger.info("Using GL43 Renderer");
+			INSTANCE=new GL43Renderer();
 		}else{
 			throw new RuntimeException("GL43 is not present");
 		}
-		
+		INSTANCE.init();
+		KeyboardManager.init(window);
+		return INSTANCE;
 	}
+	
+	public abstract void init();
 	
 	public static SlotInfo getTexAllocation(int texture){
 		for(SlotInfo i:si){
@@ -232,6 +236,7 @@ public abstract class GLRenderer extends Thread{
 	/**
 	 * BEGIN NEEDED GLRENDERER DEFINITIONS (ngrFunc)
 	 * */
+	public abstract void render();
 	public abstract void ngrdoTexture(int uniform,SlotInfo si);
 	public abstract int ngrcreateEBO(IntBuffer data);
 	public abstract void ngraddVBO(int vao,int vbo,int size,int location);

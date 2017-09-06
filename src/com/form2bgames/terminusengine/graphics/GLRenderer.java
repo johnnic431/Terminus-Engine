@@ -37,6 +37,8 @@ import static org.lwjgl.opengl.GL20.glGetShaderi;
 import static org.lwjgl.opengl.GL20.glLinkProgram;
 import static org.lwjgl.opengl.GL20.glShaderSource;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
@@ -47,6 +49,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 
+import com.form2bgames.terminusengine.core.IOUtil;
 import com.form2bgames.terminusengine.core.KeyboardManager;
 
 public abstract class GLRenderer{
@@ -224,6 +227,19 @@ public abstract class GLRenderer{
 		return new Shader(program);
 	}
 	
+	public static Texture loadTexture(String path){
+		ByteBuffer imageBuffer;
+		try{
+			imageBuffer=IOUtil.ioResourceToByteBuffer(path,8*1024);
+		}catch(IOException e){
+			throw new RuntimeException(e);
+		}
+		
+		return INSTANCE.ngrloadImageFromBuffer(imageBuffer);
+	}
+	
+	public abstract Texture ngrloadImageFromBuffer(ByteBuffer imageBuffer);
+
 	public void finishedLoading(){
 		loaded=true;
 		while(!doneWithInit){

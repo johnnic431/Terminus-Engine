@@ -36,13 +36,11 @@ public abstract class TerminusGame{
 				throw new RuntimeException("Unix/Linux requires a 64 bit installation to run");
 			os_arch="unix";
 		}
-		logger.info(os_arch);
 		File f=new File("res/natives/"+os_arch);
-		logger.info(f.getAbsolutePath());
 		System.setProperty("org.lwjgl.util.Debug",EngineInfo.bt!=EngineInfo.BuildType.STABLE?"true":"false");
 		System.setProperty("org.lwjgl.librarypath",f.getAbsolutePath());
 		
-		logger.info("Terminus Version: {}",EngineInfo.getVersion());
+		logger.info("Terminus Version: {} on arch {}",EngineInfo.getVersion(),os_arch);
 		
 		Thread rTh=new Thread(new Runnable(){
 

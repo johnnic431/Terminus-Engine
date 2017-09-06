@@ -9,8 +9,6 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.stb.STBImage.*;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -21,7 +19,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL43;
 
-import com.form2bgames.terminusengine.core.IOUtil;
 import com.form2bgames.terminusengine.events.EngineShutdownEvent;
 import com.form2bgames.terminusengine.events.EventManager;
 import com.form2bgames.terminusengine.graphics.debugcallbacks.GLDebugCallback_43;
@@ -87,7 +84,7 @@ public class GL43Renderer extends GLRenderer{
 		
 		float[] screenTriangles={-1,-1,-1,1,1,-1,-1,1,1,-1,1,1,};
 		FloatBuffer fb=BufferUtils.createFloatBuffer(screenTriangles.length);
-		fb.put(screenTriangles);
+		fb.put(screenTriangles).flip();
 		int svbo=createVBO(fb);
 		int svao=genVAO();
 		addVBO(svao,svbo,2,0);
@@ -238,34 +235,8 @@ public class GL43Renderer extends GLRenderer{
 		glVertexAttribPointer(location,size,GL_FLOAT,true,0,0);
 	}
 	
-	/**
-	 * Does not secure graphics thread internally
-	 * 
-	 * @param f
-	 *            File to load
-	 * @return
-	 * @throws IOException
-	 */
-	public static Texture loadImage(File f) throws IOException{
-		if(!f.exists()||f.isDirectory())
-			throw new IOException("File is a directory or does not exist.");
-		ByteBuffer imageBuffer=IOUtil.ioResourceToByteBuffer(f.getAbsolutePath(),8*1024);
-		
-		return loadImageFromBuffer(imageBuffer);
-	}
-	
-	public static Texture loadTexture(String path){
-		ByteBuffer imageBuffer;
-		try{
-			imageBuffer=IOUtil.ioResourceToByteBuffer(path,8*1024);
-		}catch(IOException e){
-			throw new RuntimeException(e);
-		}
-		
-		return loadImageFromBuffer(imageBuffer);
-	}
-	
-	public static Texture loadImageFromBuffer(ByteBuffer imageBuffer){
+	@Override
+	public Texture ngrloadImageFromBuffer(ByteBuffer imageBuffer){
 		ByteBuffer pixelBuffer;
 		IntBuffer w=BufferUtils.createIntBuffer(1);
 		IntBuffer h=BufferUtils.createIntBuffer(1);

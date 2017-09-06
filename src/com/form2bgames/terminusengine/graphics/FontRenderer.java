@@ -1,7 +1,5 @@
 package com.form2bgames.terminusengine.graphics;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
@@ -14,12 +12,7 @@ public class FontRenderer{
 		GraphicsThread gt=new GraphicsThread(){
 			@Override
 			public void function(){
-				try{
-					font=GL43Renderer.loadImage(new File(imageLoc));
-				}catch(IOException e){
-					e.printStackTrace();
-					throw new RuntimeException(e);
-				}
+				font=GLRenderer.loadTexture(imageLoc);
 			}
 		};
 		GraphicsProvider.addNeedsGraphicsThread(gt);

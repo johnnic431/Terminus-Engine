@@ -5,4 +5,5 @@ public class VAO2D{
 	public Texture tex;
 	public Shader s;
 	public int[] vbos;
+	protected int ibo;
 }

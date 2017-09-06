@@ -173,7 +173,8 @@ public class GL43Renderer extends GLRenderer{
 				for(VAO2D v:r.getVaos()){
 					doTexture(2,getTexAllocation(v.tex.textureID));
 					glBindVertexArray(v.vao);
-					glDrawArrays(GL_TRIANGLES,0,v.vertices);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,v.ibo);
+					glDrawElements(GL_TRIANGLES,v.vertices,GL_UNSIGNED_INT,0);
 				}
 			}
 			glBindVertexArray(0);

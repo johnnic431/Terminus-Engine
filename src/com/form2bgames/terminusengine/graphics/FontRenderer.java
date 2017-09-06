@@ -3,6 +3,7 @@ package com.form2bgames.terminusengine.graphics;
 import java.io.File;
 import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import org.lwjgl.BufferUtils;
 
@@ -44,38 +45,42 @@ public class FontRenderer{
 		
 		FloatBuffer vt=BufferUtils.createFloatBuffer(str.length()*6*2),
 				tx=BufferUtils.createFloatBuffer(str.length()*6*2);
+		//string length times six verts per char times 2 values per vert
+		IntBuffer ibo=BufferUtils.createIntBuffer(str.length()*6);
+		int place=0;
 		for(char c:str.toCharArray()){
 			float px=((float)((int)c)%16)/16;
 			float py=((float)(((int)c)/16))/16;
-			vt.put(sx);
+			vt.put(sx);//1
 			vt.put(sy);
-			vt.put(sx);
+			vt.put(sx);//2
 			vt.put(sy+tSize);
-			vt.put(sx+tSize);
+			vt.put(sx+tSize);//3
 			vt.put(sy);
-			vt.put(sx);
+			vt.put(sx+tSize);//6
 			vt.put(sy+tSize);
-			vt.put(sx+tSize);
-			vt.put(sy);
-			vt.put(sx+tSize);
-			vt.put(sy+tSize);
-			tx.put(px);
+			// 3=5, 2=4. IBO
+			tx.put(px);//1
 			tx.put(py+os);
-			tx.put(px);
+			tx.put(px);//2
 			tx.put(py);
-			tx.put(px+os);
+			tx.put(px+os);//3
 			tx.put(py+os);
-			tx.put(px);
+			tx.put(px+os);//6
 			tx.put(py);
-			tx.put(px+os);
-			tx.put(py+os);
-			tx.put(px+os);
-			tx.put(py);
+			ibo.put((place*4)+0);
+			ibo.put((place*4)+1);
+			ibo.put((place*4)+2);
+			ibo.put((place*4)+1);
+			ibo.put((place*4)+2);
+			ibo.put((place*4)+3);
 			sx+=tSize;
+			++place;
 		}
 		
 		vt.flip();
 		tx.flip();
+		ibo.flip();
 		
 		GraphicsThread d=new GraphicsThread(){
 			@Override
@@ -85,8 +90,10 @@ public class FontRenderer{
 				
 				int pvbo=GLRenderer.createVBO(vt);
 				int tvbo=GLRenderer.createVBO(tx);
+				int ebo=GLRenderer.createEBO(ibo);
 				
-				toReturn.vbos=new int[]{pvbo,tvbo};
+				toReturn.vbos=new int[]{pvbo,tvbo,ebo};
+				toReturn.ibo=ebo;
 				
 				GLRenderer.addVBO(toReturn.vao,pvbo,2,0);
 				GLRenderer.addVBO(toReturn.vao,tvbo,2,1);

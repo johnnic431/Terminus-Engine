@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import com.form2bgames.terminusengine.events.BasicEventHandler;
 import com.form2bgames.terminusengine.events.EngineShutdownEvent;
 import com.form2bgames.terminusengine.events.EventManager;
-import com.form2bgames.terminusengine.graphics.GL43Renderer;
 import com.form2bgames.terminusengine.graphics.GLRenderer;
 
 public abstract class TerminusGame{

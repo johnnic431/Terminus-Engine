@@ -20,7 +20,7 @@ import org.lwjgl.assimp.Assimp;
 
 import static org.lwjgl.opengl.GL30.*;
 
-import com.form2bgames.terminusengine.graphics.GL43Renderer;
+import com.form2bgames.terminusengine.graphics.GLRenderer;
 import com.form2bgames.terminusengine.graphics.GraphicsProvider;
 import com.form2bgames.terminusengine.graphics.GraphicsThread;
 import com.form2bgames.terminusengine.graphics.Renderable3D;
@@ -34,6 +34,8 @@ public class AssimpModelWrapper extends Renderable3D{
 				Assimp.aiProcessPreset_TargetRealtime_MaxQuality);
 		if(modelScene==null)
 			throw new NullPointerException("The loaded file did not contain a transformable mesh");
+		final String modelFileName=assimpFile.getName();
+		long sTime=System.nanoTime();
 		int numMeshes=modelScene.mNumMeshes();
 		PointerBuffer aiMeshes=modelScene.mMeshes();
 		AIMesh[] meshes=new AIMesh[numMeshes];
@@ -50,24 +52,29 @@ public class AssimpModelWrapper extends Renderable3D{
 		ArrayList<AITexture> texList=new ArrayList<>();
 		PointerBuffer textures=modelScene.mTextures();
 		if(textures!=null){
-			l.trace("Texture {} has {} textures",assimpFile.getAbsoluteFile(),textures.capacity());
+			l.trace("Texture {} has {} textures",modelFileName,textures.capacity());
 			for(int i=0;i<textures.capacity();i++){
 				texList.add(AITexture.create(textures.get(i)));
 			}
 		}else{
-			l.warn("Model {} has no textures!",assimpFile.getAbsolutePath());
+			l.warn("Model {} has no textures!",modelFileName);
 		}
 		l.info("model has {} meshes, {} meshes found",modelScene.mNumMeshes(),meshes.length);
+		ArrayList<GraphicsThread> waiters=new ArrayList<>();
 		for(int i=0;i<meshes.length;i++){
 			l.info("mesh {}",i);
-			meshList.add(initMesh(meshes[i],materials,texList));
+			waiters.add(initMesh(meshes[i],materials,texList));	//Add the processing thread back into list.
+																//Allows for other meshes to be processed without waiting for graphics thread.
+		}
+		for(GraphicsThread gt:waiters){
+			meshList.add((VAO3D)gt.waitForCompletion()); //wait for graphics trheads to complete
 		}
 		vaos=meshList.toArray(new VAO3D[]{});
-		
+		long tTime=System.nanoTime()-sTime;
+		l.info("Took {} nanos to load {} ({} seconds)",tTime,modelFileName,tTime/1e9);
 	}
 	
-	private VAO3D initMesh(AIMesh mesh,AIMaterial[] materials,ArrayList<AITexture> texList){
-		
+	private GraphicsThread initMesh(AIMesh mesh,AIMaterial[] materials,ArrayList<AITexture> texList){
 		// ------ VERTICES ------
 		ByteBuffer vertexArrayBufferData=BufferUtils.createByteBuffer(mesh.mNumVertices()*4*Float.BYTES);
 		AIVector3D.Buffer vertices=mesh.mVertices();
@@ -127,24 +134,24 @@ public class AssimpModelWrapper extends Renderable3D{
 			@Override
 			public void function(){
 				VAO3D vao=new VAO3D();
-				vao.vao=GL43Renderer.genVAO();
+				vao.vao=GLRenderer.genVAO();
 				glBindVertexArray(vao.vao);
 				vao.vbos=new int[4];
 				
-				int vab=GL43Renderer.createVBO(vertexArrayBufferData.asFloatBuffer());
-				GL43Renderer.addVBO(vao.vao,vab,4,0);
+				int vab=GLRenderer.createVBO(vertexArrayBufferData.asFloatBuffer());
+				GLRenderer.addVBO(vao.vao,vab,4,0);
 				vao.vbos[0]=vab;
 				vao.vertices=vertexArrayBufferData.capacity()/4;
 				
-				int normalArrayBuffer=GL43Renderer.createVBO(normalArrayBufferData.asFloatBuffer());
-				GL43Renderer.addVBO(vao.vao,normalArrayBuffer,1,3);
+				int normalArrayBuffer=GLRenderer.createVBO(normalArrayBufferData.asFloatBuffer());
+				GLRenderer.addVBO(vao.vao,normalArrayBuffer,1,3);
 				vao.vbos[1]=normalArrayBuffer;
 				
-				int texArrayBuffer=GL43Renderer.createVBO(texArrayBufferData.asFloatBuffer());
-				GL43Renderer.addVBO(vao.vao,texArrayBuffer,2,2);
+				int texArrayBuffer=GLRenderer.createVBO(texArrayBufferData.asFloatBuffer());
+				GLRenderer.addVBO(vao.vao,texArrayBuffer,2,2);
 				vao.vbos[2]=texArrayBuffer;
 				
-				int elementArrayBuffer=GL43Renderer.createEBO(elementArrayBufferData);
+				int elementArrayBuffer=GLRenderer.createEBO(elementArrayBufferData);
 				AssimpModelWrapper.this.ibo=elementArrayBuffer;
 				vao.vbos[3]=elementArrayBuffer;
 				
@@ -152,6 +159,6 @@ public class AssimpModelWrapper extends Renderable3D{
 			}
 		};
 		GraphicsProvider.addNeedsGraphicsThread(d);
-		return (VAO3D)d.waitForCompletion();
+		return d;
 	}
 }

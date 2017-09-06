@@ -42,68 +42,54 @@ public class FontRenderer{
 		
 		float os=(float)1/(float)16;
 		
-		float[] verts=new float[str.length()*6*2],tex=new float[str.length()*6*2];// string
-																					// length
-																					// times
-																					// six
-																					// verts
-																					// per
-																					// char
-																					// times
-																					// 2
-																					// values
-																					// per
-																					// vert
-		int cpos=0;
+		FloatBuffer vt=BufferUtils.createFloatBuffer(str.length()*6*2),
+				tx=BufferUtils.createFloatBuffer(str.length()*6*2);
 		for(char c:str.toCharArray()){
 			float px=((float)((int)c)%16)/16;
 			float py=((float)(((int)c)/16))/16;
-			verts[(cpos*12)+0]=sx;
-			verts[(cpos*12)+1]=sy;
-			verts[(cpos*12)+2]=sx;
-			verts[(cpos*12)+3]=sy+tSize;
-			verts[(cpos*12)+4]=sx+tSize;
-			verts[(cpos*12)+5]=sy;
-			verts[(cpos*12)+6]=sx;
-			verts[(cpos*12)+7]=sy+tSize;
-			verts[(cpos*12)+8]=sx+tSize;
-			verts[(cpos*12)+9]=sy;
-			verts[(cpos*12)+10]=sx+tSize;
-			verts[(cpos*12)+11]=sy+tSize;
-			tex[(cpos*12)+0]=px;
-			tex[(cpos*12)+1]=py+os;
-			tex[(cpos*12)+2]=px;
-			tex[(cpos*12)+3]=py;
-			tex[(cpos*12)+4]=px+os;
-			tex[(cpos*12)+5]=py+os;
-			tex[(cpos*12)+6]=px;
-			tex[(cpos*12)+7]=py;
-			tex[(cpos*12)+8]=px+os;
-			tex[(cpos*12)+9]=py+os;
-			tex[(cpos*12)+10]=px+os;
-			tex[(cpos*12)+11]=py;
-			++cpos;
+			vt.put(sx);
+			vt.put(sy);
+			vt.put(sx);
+			vt.put(sy+tSize);
+			vt.put(sx+tSize);
+			vt.put(sy);
+			vt.put(sx);
+			vt.put(sy+tSize);
+			vt.put(sx+tSize);
+			vt.put(sy);
+			vt.put(sx+tSize);
+			vt.put(sy+tSize);
+			tx.put(px);
+			tx.put(py+os);
+			tx.put(px);
+			tx.put(py);
+			tx.put(px+os);
+			tx.put(py+os);
+			tx.put(px);
+			tx.put(py);
+			tx.put(px+os);
+			tx.put(py+os);
+			tx.put(px+os);
+			tx.put(py);
 			sx+=tSize;
 		}
 		
-		FloatBuffer vts=BufferUtils.createFloatBuffer(verts.length);
-		vts.put(verts).flip();
-		FloatBuffer txs=BufferUtils.createFloatBuffer(tex.length);
-		txs.put(tex).flip();
+		vt.flip();
+		tx.flip();
 		
 		GraphicsThread d=new GraphicsThread(){
 			@Override
 			public void function(){
-				toReturn.vao=GL43Renderer.genVAO();
-				toReturn.vertices=verts.length/2;
+				toReturn.vao=GLRenderer.genVAO();
+				toReturn.vertices=vt.capacity()/2;
 				
-				int pvbo=GL43Renderer.createVBO(vts);
-				int tvbo=GL43Renderer.createVBO(txs);
+				int pvbo=GLRenderer.createVBO(vt);
+				int tvbo=GLRenderer.createVBO(tx);
 				
 				toReturn.vbos=new int[]{pvbo,tvbo};
 				
-				GL43Renderer.addVBO(toReturn.vao,pvbo,2,0);
-				GL43Renderer.addVBO(toReturn.vao,tvbo,2,1);
+				GLRenderer.addVBO(toReturn.vao,pvbo,2,0);
+				GLRenderer.addVBO(toReturn.vao,tvbo,2,1);
 			}
 		};
 		

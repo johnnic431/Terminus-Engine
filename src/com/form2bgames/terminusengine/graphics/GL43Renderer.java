@@ -22,7 +22,6 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL43;
 
 import com.form2bgames.terminusengine.core.IOUtil;
-import com.form2bgames.terminusengine.core.KeyboardManager;
 import com.form2bgames.terminusengine.events.EngineShutdownEvent;
 import com.form2bgames.terminusengine.events.EventManager;
 import com.form2bgames.terminusengine.graphics.debugcallbacks.GLDebugCallback_43;
@@ -209,24 +208,9 @@ public class GL43Renderer extends GLRenderer{
 		EventManager.postEvent(new EngineShutdownEvent());
 	}
 	
-	public static int genTexture(){
-		return glGenTextures();
-	}
-	
-	public static int genVAO(){
-		return glGenVertexArrays();
-	}
-	
 	@Override
 	public int ngrgenVAO(){
 		return glGenVertexArrays();
-	}
-	
-	public static int createVBO(FloatBuffer data){
-		int vbo=glGenBuffers();
-		glBindBuffer(GL_ARRAY_BUFFER,vbo);
-		glBufferData(GL_ARRAY_BUFFER,data,GL_STATIC_DRAW);
-		return vbo;
 	}
 	
 	@Override
@@ -243,37 +227,6 @@ public class GL43Renderer extends GLRenderer{
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER,data,GL_STATIC_DRAW);
 		return vbo;
-	}
-	
-	/**
-	 * Creates the EBO/IBO that will correctly wind the vertexes
-	 * 
-	 * @param data
-	 *            The Indexes that will correctly wind the faces on the
-	 *            currently bound VAO
-	 * @return The created EBO/IBO
-	 */
-	public static int createEBO(IntBuffer data){
-		int vbo=glGenBuffers();
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER,data,GL_STATIC_DRAW);
-		return vbo;
-	}
-	/**
-	 * @param vao
-	 *            The VAO to add the VBO to
-	 * @param vbo
-	 *            The VBO that contains data
-	 * @param size
-	 *            The amount of data in each unit (e.g. 4 vertexes per face)
-	 * @param location
-	 *            The location in the shader the data will be sent to
-	 */
-	public static void addVBO(int vao,int vbo,int size,int location){
-		glBindVertexArray(vao);
-		glEnableVertexAttribArray(location);
-		glBindBuffer(GL_ARRAY_BUFFER,vbo);
-		glVertexAttribPointer(location,size,GL_FLOAT,true,0,0);
 	}
 	
 	@Override
@@ -338,17 +291,6 @@ public class GL43Renderer extends GLRenderer{
 		return tex;
 	}
 	
-	/**
-	 * @param uniform
-	 *            the uniform location in shader to bind to
-	 * @param si
-	 *            The SlotInfo that contains the texture unit to use
-	 */
-	public static void doTexture(int uniform,SlotInfo si){
-		glActiveTexture(GL_TEXTURE0+si.slot);
-		glBindTexture(GL_TEXTURE_2D,si.tex);
-		glUniform1i(uniform,si.slot);
-	}
 	@Override
 	public void ngrdoTexture(int uniform,SlotInfo si){
 		glActiveTexture(GL_TEXTURE0+si.slot);

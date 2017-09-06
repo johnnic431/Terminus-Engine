@@ -82,7 +82,7 @@ public class GL43Renderer extends GLRenderer{
 		
 		logger.info("Entering render");
 		
-		float[] screenTriangles={-1,-1,-1,1,1,-1,-1,1,1,-1,1,1,};
+		float[] screenTriangles={-1,-1,-1,1,1,-1,-1,1,1,-1,1,1};
 		FloatBuffer fb=BufferUtils.createFloatBuffer(screenTriangles.length);
 		fb.put(screenTriangles).flip();
 		int svbo=createVBO(fb);
@@ -95,6 +95,7 @@ public class GL43Renderer extends GLRenderer{
 			for(GraphicsThread d:GraphicsProvider.getGraphicsThreads()){
 				d.function();
 				d.finished();
+				GraphicsProvider.getGraphicsThreads().remove(d);
 			}
 			try{
 				Thread.sleep(10);
@@ -103,6 +104,7 @@ public class GL43Renderer extends GLRenderer{
 		for(GraphicsThread d:GraphicsProvider.getGraphicsThreads()){
 			d.function();
 			d.finished();
+			GraphicsProvider.getGraphicsThreads().remove(d);
 		}
 		
 		FloatBuffer sixteen=BufferUtils.createFloatBuffer(16);
@@ -123,6 +125,7 @@ public class GL43Renderer extends GLRenderer{
 					break;
 				d.function();
 				d.finished();
+				GraphicsProvider.getGraphicsThreads().remove(d);
 				++processed;
 			}
 			

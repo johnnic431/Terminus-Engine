@@ -43,10 +43,11 @@ public class FontRenderer{
 		
 		float os=(float)1/(float)16;
 		
-		FloatBuffer vt=BufferUtils.createFloatBuffer(str.length()*6*2),
-				tx=BufferUtils.createFloatBuffer(str.length()*6*2);
-		//string length times six verts per char times 2 values per vert
+		FloatBuffer vt=BufferUtils.createFloatBuffer(str.length()*4*2),
+				tx=BufferUtils.createFloatBuffer(str.length()*4*2);
+		//string length times four verts per char times 2 values per vert
 		IntBuffer ibo=BufferUtils.createIntBuffer(str.length()*6);
+		//four verts make up 2 triangles with 6 verts
 		int place=0;
 		for(char c:str.toCharArray()){
 			float px=((float)((int)c)%16)/16;
@@ -59,7 +60,6 @@ public class FontRenderer{
 			vt.put(sy);
 			vt.put(sx+tSize);//6
 			vt.put(sy+tSize);
-			// 3=5, 2=4. IBO
 			tx.put(px);//1
 			tx.put(py+os);
 			tx.put(px);//2
@@ -86,7 +86,7 @@ public class FontRenderer{
 			@Override
 			public void function(){
 				toReturn.vao=GLRenderer.genVAO();
-				toReturn.vertices=vt.capacity()/2;
+				toReturn.vertices=ibo.capacity();
 				
 				int pvbo=GLRenderer.createVBO(vt);
 				int tvbo=GLRenderer.createVBO(tx);

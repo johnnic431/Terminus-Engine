@@ -38,9 +38,6 @@ public class GLDebugCallback_43 extends GLDebugMessageCallback{
 			break;
 		
 		case GL_DEBUG_SOURCE_OTHER:
-			_source="UNKNOWN";
-			break;
-		
 		default:
 			_source="UNKNOWN";
 			break;

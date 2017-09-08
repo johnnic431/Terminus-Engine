@@ -136,6 +136,7 @@ public abstract class GLRenderer{
 		}
 		INSTANCE.init();
 		KeyboardManager.init(window);
+		doneWithInit=true;
 		return INSTANCE;
 	}
 	

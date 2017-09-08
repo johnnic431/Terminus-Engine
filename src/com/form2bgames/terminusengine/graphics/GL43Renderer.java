@@ -72,9 +72,6 @@ public class GL43Renderer extends GLRenderer{
 		
 		logger.info("Load time of shaders was {} nanos ({} sec)",System.nanoTime()-sLoad,
 				((float)(System.nanoTime()-sLoad))/1e9f);
-		
-		doneWithInit=true;
-		
 	}
 	
 	@Override

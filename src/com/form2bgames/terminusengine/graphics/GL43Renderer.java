@@ -16,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL43;
 
@@ -29,7 +30,6 @@ public class GL43Renderer extends GLRenderer{
 	 */
 	@SuppressWarnings("unused")
 	private com.form2bgames.terminusengine.graphics.debugcallbacks.GLDebugCallback_43 gldc;
-	@SuppressWarnings("unused")
 	private Shader shader2D=null,shader3D=null,shaderPostprocess=null;
 	private static final String VERTEX_SHADER_2D=""+"#version 430\n"+""+"layout(location=0) in vec2 vert;\n"
 			+"layout(location=1) in vec2 tex;\n"+"out vec2 vtex;\n"+"out vec4 gl_Position;\n"+"void main(){\n"
@@ -49,9 +49,9 @@ public class GL43Renderer extends GLRenderer{
 					+"layout(location=129) uniform vec3 kSpecular;\n"+"layout(location=130) uniform vec3 kAmbient;\n"
 					+"layout(location=131) uniform vec3 kDiffuse;\n"+"layout(location=132) uniform float shiny;\n"+""
 					+"out vec4 color;\n"+""+"void main(){\n"+"	color=texture2D(texture,fTexCoords);\n"+"}\n"+"",
-			VERTEX_SHADER_POSTPROCESS=""+"#version 430\n"+""+"layout(location=0) in vec2 position;\n"+""
-					+"out vec2 textureCoords;\n"+""+"void main(){\n"+"	gl_Position=vec4(position,0,1);\n"
-					+"	textureCoords=position;\n"+"}\n"+"",
+			VERTEX_SHADER_POSTPROCESS=""+"#version 430\n"+""+"layout(location=0) in vec2 position;\n"
+					+"layout(location=1) in vec2 texCoords;\n"+"out vec2 textureCoords;\n"+""+"void main(){\n"
+					+"	gl_Position=vec4(position,0,1);\n"+"	textureCoords=texCoords;\n"+"}\n"+"",
 			FRAG_SHADER_POSTPROCESS=""+"#version 430\n"+""+"in vec2 textureCoords;\n"+""
 					+"layout(location=128) uniform sampler2D texture;\n"+""+"out vec4 color;"+""+"void main(){\n"
 					+"	color=texture2D(texture,textureCoords);\n"+"}\n";
@@ -72,6 +72,23 @@ public class GL43Renderer extends GLRenderer{
 		
 		logger.info("Load time of shaders was {} nanos ({} sec)",System.nanoTime()-sLoad,
 				((float)(System.nanoTime()-sLoad))/1e9f);
+		
+		framebuffer=glGenFramebuffers();
+		framebufferTexture=glGenTextures();
+		framebufferDepth=glGenRenderbuffers();
+		
+		glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
+		
+		glBindTexture(GL_TEXTURE_2D,framebufferTexture);
+		glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_INT,(java.nio.ByteBuffer)null);
+		glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,framebufferTexture,0);
+		
+		glBindRenderbuffer(GL_RENDERBUFFER,framebufferDepth);
+		glRenderbufferStorage(GL_RENDERBUFFER,GL14.GL_DEPTH_COMPONENT32,width,height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,framebufferDepth);
+		
+		glBindFramebuffer(GL_FRAMEBUFFER,0);
 	}
 	
 	@Override
@@ -79,29 +96,29 @@ public class GL43Renderer extends GLRenderer{
 		
 		logger.info("Entering render");
 		
-		float[] screenTriangles={-1,-1,-1,1,1,-1,-1,1,1,-1,1,1};
-		FloatBuffer fb=BufferUtils.createFloatBuffer(screenTriangles.length);
-		fb.put(screenTriangles).flip();
-		int svbo=createVBO(fb);
+		FloatBuffer fb=BufferUtils.createFloatBuffer(12),
+				tx=BufferUtils.createFloatBuffer(12);
+		fb.put(new float[]{-1,-1,-1,1,1,-1,-1,1,1,-1,1,1}).flip();
+		tx.put(new float[]{0,0,0,1,1,0,0,1,1,0,1,1}).flip();
 		int svao=genVAO();
-		addVBO(svao,svbo,2,0);
+		addVBO(svao,createVBO(fb),2,0);
+		addVBO(svao,createVBO(tx),2,1);
 		
 		Texture.setNoTex(loadTexture("com/form2bgames/terminusengine/graphics/4x4.jpg"));
 		
+		GraphicsThread d=null;
 		while(!loaded){
-			for(GraphicsThread d:GraphicsProvider.getGraphicsThreads()){
+			while((d=GraphicsProvider.getNextGraphicsThread())!=null){
 				d.function();
 				d.finished();
-				GraphicsProvider.getGraphicsThreads().remove(d);
 			}
 			try{
 				Thread.sleep(10);
 			}catch(Exception e){}
 		}
-		for(GraphicsThread d:GraphicsProvider.getGraphicsThreads()){
+		while((d=GraphicsProvider.getNextGraphicsThread())!=null){
 			d.function();
 			d.finished();
-			GraphicsProvider.getGraphicsThreads().remove(d);
 		}
 		
 		FloatBuffer sixteen=BufferUtils.createFloatBuffer(16);
@@ -111,26 +128,20 @@ public class GL43Renderer extends GLRenderer{
 		logger.info("Entering render loop");
 		
 		while(!glfwWindowShouldClose(window)){
+			
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER,framebuffer);
 			EventManager.postEvent(new RenderBeginEvent());
 			cFrameStart=System.nanoTime();
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
 			glfwPollEvents();
 			
 			int processed=0;
-			for(GraphicsThread d:GraphicsProvider.getGraphicsThreads()){
-				if(processed==MAX_GRAPHICS_JOBS_PER_FRAME)
-					break;
-				d.function();
-				d.finished();
-				GraphicsProvider.getGraphicsThreads().remove(d);
+			GraphicsThread td=null;
+			while((td=GraphicsProvider.getNextGraphicsThread())!=null&&!(processed==MAX_GRAPHICS_JOBS_PER_FRAME)){
+				td.function();
+				td.finished();
 				++processed;
 			}
-			
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, /* multisampledFbo */0);// eventually
-																			// i'll
-																			// add
-																			// this,
-																			// right?
 			
 			// RENDER BEGINS HERE
 			
@@ -182,14 +193,11 @@ public class GL43Renderer extends GLRenderer{
 			
 			// Postprocess and draw to screen //eventully i guess
 			
-			/*
-			 * glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
-			 * 
-			 * glUseProgram(shaderPostprocess.program);
-			 * doTexture(128,getTexAllocation(renderedTexture));
-			 * 
-			 * glBindVertexArray(svao); glDrawArrays(GL_TRIANGLES,0,6);
-			 */
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
+			glUseProgram(shaderPostprocess.program);
+			doTexture(128,getTexAllocation(framebufferTexture));
+			glBindVertexArray(svao);
+			glDrawArrays(GL_TRIANGLES,0,6);
 			
 			glfwSwapBuffers(window);
 			

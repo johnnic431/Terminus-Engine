@@ -1,18 +1,19 @@
 package com.form2bgames.terminusengine.graphics;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GraphicsProvider{
-	private static CopyOnWriteArrayList<GraphicsThread> gThreads=new CopyOnWriteArrayList<GraphicsThread>();
-	private static CopyOnWriteArrayList<Renderable2D> r2d=new CopyOnWriteArrayList<Renderable2D>();
-	private static CopyOnWriteArrayList<Renderable3D> r3d=new CopyOnWriteArrayList<Renderable3D>();
+	private static ConcurrentLinkedQueue<GraphicsThread> gThreads=new ConcurrentLinkedQueue<>();
+	private static CopyOnWriteArrayList<Renderable2D> r2d=new CopyOnWriteArrayList<>();
+	private static CopyOnWriteArrayList<Renderable3D> r3d=new CopyOnWriteArrayList<>();
 	
 	public static void addNeedsGraphicsThread(GraphicsThread d){
 		gThreads.add(d);
 	}
 	
-	public static CopyOnWriteArrayList<GraphicsThread> getGraphicsThreads(){
-		return gThreads;
+	public static GraphicsThread getNextGraphicsThread(){
+		return gThreads.poll();
 	}
 	
 	public static void removeGraphicsThread(GraphicsThread graphicsThread){

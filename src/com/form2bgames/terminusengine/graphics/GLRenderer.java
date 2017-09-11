@@ -1,41 +1,8 @@
 package com.form2bgames.terminusengine.graphics;
 
-import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
-import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
-import static org.lwjgl.glfw.GLFW.GLFW_SAMPLES;
-import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
-import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
-import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
-import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
-import static org.lwjgl.glfw.GLFW.glfwInit;
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
-import static org.lwjgl.glfw.GLFW.glfwWindowHint;
-import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
-import static org.lwjgl.opengl.GL11.GL_FALSE;
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glGetInteger;
-import static org.lwjgl.opengl.GL20.GL_COMPILE_STATUS;
-import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL20.GL_INFO_LOG_LENGTH;
-import static org.lwjgl.opengl.GL20.GL_LINK_STATUS;
-import static org.lwjgl.opengl.GL20.GL_MAX_TEXTURE_IMAGE_UNITS;
-import static org.lwjgl.opengl.GL20.GL_VERTEX_SHADER;
-import static org.lwjgl.opengl.GL20.glAttachShader;
-import static org.lwjgl.opengl.GL20.glCompileShader;
-import static org.lwjgl.opengl.GL20.glCreateProgram;
-import static org.lwjgl.opengl.GL20.glCreateShader;
-import static org.lwjgl.opengl.GL20.glDeleteProgram;
-import static org.lwjgl.opengl.GL20.glDeleteShader;
-import static org.lwjgl.opengl.GL20.glGetProgramInfoLog;
-import static org.lwjgl.opengl.GL20.glGetProgrami;
-import static org.lwjgl.opengl.GL20.glGetShaderInfoLog;
-import static org.lwjgl.opengl.GL20.glGetShaderi;
-import static org.lwjgl.opengl.GL20.glLinkProgram;
-import static org.lwjgl.opengl.GL20.glShaderSource;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -63,13 +30,13 @@ public abstract class GLRenderer{
 	protected static float aspectRatio;
 	protected static KeyboardManager km=null;
 	protected long fps=0,lastFrameTime=0;
+	protected int framebuffer=0,framebufferTexture=0,framebufferDepth=0;
 	protected static boolean loaded=false;
 	protected static SlotInfo[] si;
 	
-	public GLRenderer(){
-	}
+	public GLRenderer(){}
 	
-	public static GLRenderer startRenderer(String appName){
+	public static final GLRenderer startRenderer(String appName){
 		GLRenderer.appName=appName;
 		if(!glfwInit())
 			throw new RuntimeException("Failed initializing GLFW");
@@ -103,19 +70,19 @@ public abstract class GLRenderer{
 		
 		glcaps=GL.createCapabilities();
 		
-		logger.info("OpenGL Version:      {}",GL11.glGetString(GL11.GL_VERSION));
-		logger.info("OpenGL Renderer:     {}",GL11.glGetString(GL11.GL_RENDERER));
-		logger.info("OpenGL Vendor:       {}",GL11.glGetString(GL11.GL_VENDOR));
+		logger.info("OpenGL Version:      {}",glGetString(GL11.GL_VERSION));
+		logger.info("OpenGL Renderer:     {}",glGetString(GL11.GL_RENDERER));
+		logger.info("OpenGL Vendor:       {}",glGetString(GL11.GL_VENDOR));
 		
-		logger.info("OpenGL TexUnits:     {}",GL11.glGetInteger(GL_MAX_TEXTURE_IMAGE_UNITS));
+		logger.info("OpenGL TexUnits:     {}",glGetInteger(GL_MAX_TEXTURE_IMAGE_UNITS));
 		
 		logger.info("OpenGL 4.5:          {}",glcaps.OpenGL45);
 		
 		if(!glcaps.OpenGL43)
 			throw new RuntimeException("OpenGL 4.3 is required");
 		
-		GL11.glEnable(GL11.GL_TEXTURE_2D);
-		GL11.glClearColor(.2f,.2f,.2f,0f);
+		glEnable(GL_TEXTURE_2D);
+		glClearColor(.2f,.2f,.2f,0f);
 		
 		glEnable(GL_DEPTH_TEST);
 		
@@ -124,7 +91,7 @@ public abstract class GLRenderer{
 			si[i]=new SlotInfo();
 		}
 		
-		GL11.glViewport(0,0,width,height);
+		glViewport(0,0,width,height);
 		
 		//FIND GL VERSION AND CREATE INSTANCE AS RENDERER
 		
@@ -164,29 +131,28 @@ public abstract class GLRenderer{
 		return si[slot];
 	}
 	
-	public static class SlotInfo{
+	public static final class SlotInfo{
 		public boolean inUse=false;
 		public int tex=0,slot=0,allocated=0;
 	}
 	
-	public static float getAspectRatio(){
-		// TODO Auto-generated method stub
+	public static final float getAspectRatio(){
 		return aspectRatio;
 	}
 	
-	public long getFps(){
+	public final long getFps(){
 		return fps;
 	}
 	
-	public long getLastFrameTime(){
+	public final long getLastFrameTime(){
 		return lastFrameTime;
 	}
 	
-	public static void setWindowShouldClose(boolean b){
+	public static final void setWindowShouldClose(boolean b){
 		glfwSetWindowShouldClose(window,b);
 	}
 	
-	public static Shader loadShader(String vertexShader,String fragShader){
+	public static Shader loadShader(String vertexShader,String fragShader){ //add binary shader options?
 		int vs=glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vs,vertexShader);
 		glCompileShader(vs);
@@ -228,7 +194,7 @@ public abstract class GLRenderer{
 		return new Shader(program);
 	}
 	
-	public static Texture loadTexture(String path){
+	public static final Texture loadTexture(String path){
 		ByteBuffer imageBuffer;
 		try{
 			imageBuffer=IOUtil.ioResourceToByteBuffer(path,8*1024);
@@ -241,7 +207,7 @@ public abstract class GLRenderer{
 	
 	public abstract Texture ngrloadImageFromBuffer(ByteBuffer imageBuffer);
 
-	public void finishedLoading(){
+	public final void finishedLoading(){
 		loaded=true;
 		while(!doneWithInit){
 			try{

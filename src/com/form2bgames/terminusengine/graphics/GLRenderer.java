@@ -11,6 +11,7 @@ import java.nio.IntBuffer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -18,6 +19,8 @@ import org.lwjgl.opengl.GLCapabilities;
 
 import com.form2bgames.terminusengine.core.IOUtil;
 import com.form2bgames.terminusengine.core.KeyboardManager;
+import com.form2bgames.terminusengine.events.BasicEventHandler;
+import com.form2bgames.terminusengine.events.EventManager;
 
 public abstract class GLRenderer{
 	protected static final Logger logger=LogManager.getLogger();
@@ -33,6 +36,9 @@ public abstract class GLRenderer{
 	protected int framebuffer=0,framebufferTexture=0,framebufferDepth=0;
 	protected static boolean loaded=false;
 	protected static SlotInfo[] si;
+	protected static FloatBuffer fb,tx;
+	protected Shader shader2D=null,shader3D=null,shaderPostprocess=null;
+	protected static boolean screenshot=false;
 	
 	public GLRenderer(){}
 	
@@ -78,8 +84,13 @@ public abstract class GLRenderer{
 		
 		logger.info("OpenGL 4.5:          {}",glcaps.OpenGL45);
 		
-		if(!glcaps.OpenGL43)
+		if(!glcaps.OpenGL43) //minimum opengl version supported
 			throw new RuntimeException("OpenGL 4.3 is required");
+		
+		fb=BufferUtils.createFloatBuffer(12);
+		tx=BufferUtils.createFloatBuffer(12);
+		fb.put(new float[]{-1,-1,-1,1,1,-1,-1,1,1,-1,1,1}).flip();
+		tx.put(new float[]{0,0,0,1,1,0,0,1,1,0,1,1}).flip();
 		
 		glEnable(GL_TEXTURE_2D);
 		glClearColor(.2f,.2f,.2f,0f);
@@ -95,7 +106,10 @@ public abstract class GLRenderer{
 		
 		//FIND GL VERSION AND CREATE INSTANCE AS RENDERER
 		
-		if(glcaps.OpenGL43){
+		/*if(glcaps.OpenGL45){ //NOT YET IMPLEMENTED
+			logger.info("Using GL45 Renderer");
+			INSTANCE=new GL45Renderer();
+		}else */if(glcaps.OpenGL43){
 			logger.info("Using GL43 Renderer");
 			INSTANCE=new GL43Renderer();
 		}else{
@@ -225,6 +239,8 @@ public abstract class GLRenderer{
 	public abstract void ngraddVBO(int vao,int vbo,int size,int location);
 	public abstract int ngrcreateVBO(FloatBuffer data);
 	public abstract int ngrgenVAO();
+	public abstract int ngrgenTexture();
+	public abstract void ngrsaveScreenshot(String path) throws IOException;
 	
 	/**
 	 * END NEEDED DEFINITIONS, BEGIN IMPLEMENTATIONS FROM INSTANCE
@@ -262,6 +278,12 @@ public abstract class GLRenderer{
 	}
 	public static int genVAO(){
 		return INSTANCE.ngrgenVAO();
+	}
+	public static int genTexture(){
+		return INSTANCE.ngrgenTexture();
+	}
+	public static void saveScreenshot(String filePath) throws IOException{
+		INSTANCE.ngrsaveScreenshot(filePath);
 	}
 	
 	private static GLRenderer INSTANCE;

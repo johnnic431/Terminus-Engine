@@ -9,6 +9,9 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.stb.STBImage.*;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -31,6 +34,7 @@ public class GL43Renderer extends GLRenderer{
 	@SuppressWarnings("unused")
 	private com.form2bgames.terminusengine.graphics.debugcallbacks.GLDebugCallback_43 gldc;
 	private Shader shader2D=null,shader3D=null,shaderPostprocess=null;
+	private Object framebufferLock=new Object();
 	private static final String VERTEX_SHADER_2D=""+"#version 430\n"+""+"layout(location=0) in vec2 vert;\n"
 			+"layout(location=1) in vec2 tex;\n"+"out vec2 vtex;\n"+"out vec4 gl_Position;\n"+"void main(){\n"
 			+"	vec2 pos=vert-vec2(400,300);\n"+"	pos/=vec2(400,300);\n"+"	gl_Position=vec4(pos,0,1);\n"
@@ -129,77 +133,79 @@ public class GL43Renderer extends GLRenderer{
 		
 		while(!glfwWindowShouldClose(window)){
 			
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER,framebuffer);
-			EventManager.postEvent(new RenderBeginEvent());
-			cFrameStart=System.nanoTime();
-			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
-			glfwPollEvents();
-			
-			int processed=0;
-			GraphicsThread td=null;
-			while((td=GraphicsProvider.getNextGraphicsThread())!=null&&!(processed==MAX_GRAPHICS_JOBS_PER_FRAME)){
-				td.function();
-				td.finished();
-				++processed;
-			}
-			
-			// RENDER BEGINS HERE
-			
-			glEnable(GL_DEPTH_TEST);
-			
-			CopyOnWriteArrayList<Renderable3D> threeDList=GraphicsProvider.getRenderable3Ds();
-			
-			glUseProgram(shader3D.program);
-			
-			for(Renderable3D r:threeDList){
-				for(VAO3D vao:r.getVaos()){
-					Material m=vao.material;
-					if(m==null){
-						doTexture(128,getTexAllocation(Texture.getNoTex().textureID));
-					}else{
-						doTexture(128,getTexAllocation(m.texture.textureID));
-						GL20.glUniform1f(132,m.brightness);
-						GL20.glUniform3f(129,m.kSpecular.x,m.kSpecular.x,m.kSpecular.x);
-						GL20.glUniform3f(130,m.kAmbient.x,m.kAmbient.x,m.kAmbient.x);
-						GL20.glUniform3f(131,m.kDiffuse.x,m.kDiffuse.x,m.kDiffuse.x);
+			synchronized(framebufferLock){
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER,framebuffer);
+				EventManager.postEvent(new RenderBeginEvent());
+				cFrameStart=System.nanoTime();
+				GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
+				glfwPollEvents();
+				
+				int processed=0;
+				GraphicsThread td=null;
+				while((td=GraphicsProvider.getNextGraphicsThread())!=null&&!(processed==MAX_GRAPHICS_JOBS_PER_FRAME)){
+					td.function();
+					td.finished();
+					++processed;
+				}
+				
+				// RENDER BEGINS HERE
+				
+				glEnable(GL_DEPTH_TEST);
+				
+				CopyOnWriteArrayList<Renderable3D> threeDList=GraphicsProvider.getRenderable3Ds();
+				
+				glUseProgram(shader3D.program);
+				
+				for(Renderable3D r:threeDList){
+					for(VAO3D vao:r.getVaos()){
+						Material m=vao.material;
+						if(m==null){
+							doTexture(128,getTexAllocation(Texture.getNoTex().textureID));
+						}else{
+							doTexture(128,getTexAllocation(m.texture.textureID));
+							GL20.glUniform1f(132,m.brightness);
+							GL20.glUniform3f(129,m.kSpecular.x,m.kSpecular.x,m.kSpecular.x);
+							GL20.glUniform3f(130,m.kAmbient.x,m.kAmbient.x,m.kAmbient.x);
+							GL20.glUniform3f(131,m.kDiffuse.x,m.kDiffuse.x,m.kDiffuse.x);
+						}
+						GL20.glUniformMatrix4fv(3,false,r.camera.getViewProjMatrix());
+						GL20.glUniformMatrix4fv(4,false,r.getModelViewMat().get(sixteen));
+						glBindVertexArray(vao.vao);
+						glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,r.getIBO());
+						glDrawElements(GL_TRIANGLES,vao.vertices,GL_UNSIGNED_INT,0);
 					}
-					GL20.glUniformMatrix4fv(3,false,r.camera.getViewProjMatrix());
-					GL20.glUniformMatrix4fv(4,false,r.getModelViewMat().get(sixteen));
-					glBindVertexArray(vao.vao);
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,r.getIBO());
-					glDrawElements(GL_TRIANGLES,vao.vertices,GL_UNSIGNED_INT,0);
 				}
-			}
-			
-			CopyOnWriteArrayList<Renderable2D> twoDList=GraphicsProvider.getRenderable2Ds();
-			
-			glDisable(GL_DEPTH_TEST);
-			
-			glUseProgram(shader2D.program);
-			
-			for(Renderable2D r:twoDList){
-				for(VAO2D v:r.getVaos()){
-					doTexture(2,getTexAllocation(v.tex.textureID));
-					glBindVertexArray(v.vao);
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,v.ibo);
-					glDrawElements(GL_TRIANGLES,v.vertices,GL_UNSIGNED_INT,0);
+				
+				CopyOnWriteArrayList<Renderable2D> twoDList=GraphicsProvider.getRenderable2Ds();
+				
+				glDisable(GL_DEPTH_TEST);
+				
+				glUseProgram(shader2D.program);
+				
+				for(Renderable2D r:twoDList){
+					for(VAO2D v:r.getVaos()){
+						doTexture(2,getTexAllocation(v.tex.textureID));
+						glBindVertexArray(v.vao);
+						glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,v.ibo);
+						glDrawElements(GL_TRIANGLES,v.vertices,GL_UNSIGNED_INT,0);
+					}
 				}
+				glBindVertexArray(0);
+				
+				// RENDER ENDS HERE
+				
+				glFlush();
+				
+				// Postprocess and draw to screen //eventully i guess
+				
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
+				glUseProgram(shaderPostprocess.program);
+				doTexture(128,getTexAllocation(framebufferTexture));
+				glBindVertexArray(svao);
+				glDrawArrays(GL_TRIANGLES,0,6);
+				
+				glfwSwapBuffers(window);
 			}
-			glBindVertexArray(0);
-			
-			// RENDER ENDS HERE
-			
-			glFlush();
-			
-			// Postprocess and draw to screen //eventully i guess
-			
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
-			glUseProgram(shaderPostprocess.program);
-			doTexture(128,getTexAllocation(framebufferTexture));
-			glBindVertexArray(svao);
-			glDrawArrays(GL_TRIANGLES,0,6);
-			
-			glfwSwapBuffers(window);
 			
 			fpts++;
 			if(oneS+1000000000<lastFrameStart){
@@ -276,5 +282,37 @@ public class GL43Renderer extends GLRenderer{
 		glActiveTexture(GL_TEXTURE0+si.slot);
 		glBindTexture(GL_TEXTURE_2D,si.tex);
 		glUniform1i(uniform,si.slot);
+	}
+
+	@Override
+	public int ngrgenTexture(){
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void ngrsaveScreenshot(String path) throws IOException{
+		ByteBuffer pixels=BufferUtils.createByteBuffer(width*height*3);//3bpp
+		byte[] pxls=new byte[width*height*3];
+		byte[] header=new byte[]{0,0,2,0,0,0,0,32,0,0,0,0};
+		byte[] wd=ByteBuffer.allocate(4).putInt(width).array();
+		byte[] ht=ByteBuffer.allocate(4).putInt(height).array();
+		BufferedOutputStream bos=new BufferedOutputStream(new FileOutputStream(path));
+		bos.write(header);
+		bos.write(wd[3]);
+		bos.write(wd[2]);
+		bos.write(ht[3]);
+		bos.write(ht[2]);
+		bos.write(24);
+		bos.write(0);
+		synchronized(framebufferLock){
+			glBindFramebuffer(GL_READ_FRAMEBUFFER,0);
+			glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+			glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels);
+		}
+		pixels.get(pxls);
+		bos.write(pxls);
+		bos.flush();
+		bos.close();
 	}
 }

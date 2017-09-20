@@ -46,7 +46,7 @@ public abstract class TerminusGame{
 
 			@Override
 			public void run(){
-				renderer=GLRenderer.startRenderer("");
+				renderer=GLRenderer.startRenderer(ai.appName);
 				renderer.render();
 			}
 		});
